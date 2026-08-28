@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Information for the browser goes inside <head>. -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- This text appears in the browser tab. -->
+  <title>My First Website</title>
+
+  <!-- CSS controls how the page looks. -->
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #1f2937;
+      background: #f3f4f6;
+    }
+
+    header {
+      padding: 64px 20px;
+      text-align: center;
+      color: white;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+    }
+
+    header h1 {
+      margin: 0 0 10px;
+      font-size: 2.5rem;
+    }
+
+    nav {
+      padding: 14px;
+      text-align: center;
+      background: #111827;
+    }
+
+    nav a {
+      margin: 0 12px;
+      color: white;
+      text-decoration: none;
+    }
+
+    nav a:hover {
+      color: #93c5fd;
+    }
+
+    main {
+      width: min(900px, 92%);
+      margin: 32px auto;
+    }
+
+    section {
+      margin-bottom: 24px;
+      padding: 28px;
+      border-radius: 14px;
+      background: white;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      padding: 18px;
+      border: 2px solid #dbeafe;
+      border-radius: 10px;
+      background: #eff6ff;
+    }
+
+    button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      background: #2563eb;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    #message {
+      min-height: 24px;
+      font-weight: bold;
+      color: #2563eb;
+    }
+
+    footer {
+      padding: 24px;
+      text-align: center;
+      color: #d1d5db;
+      background: #111827;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Everything inside <body> is visible on the page. -->
+
+  <header>
+    <h1>My First Website</h1>
+    <p>A small page made with HTML, CSS, and JavaScript.</p>
+  </header>
+
+  <!-- These links jump to sections with matching id values. -->
+  <nav>
+    <a href="#about">About</a>
+    <a href="#examples">Examples</a>
+    <a href="#interactive">Interactive</a>
+  </nav>
+
+  <!-- <main> contains the page's primary content. -->
+  <main>
+    <section id="about">
+      <h2>What is HTML?</h2>
+
+      <p>
+        <strong>HTML</strong> gives a web page its structure. It uses
+        elements such as headings, paragraphs, links, lists, and buttons.
+      </p>
+
+      <h3>The three main web technologies</h3>
+
+      <ul>
+        <li>HTML provides the content and structure.</li>
+        <li>CSS controls colors, spacing, and layout.</li>
+        <li>JavaScript adds behavior and interaction.</li>
+      </ul>
+
+      <p>
+        Learn more from
+        <a
+          href="[developer.mozilla.org](https://developer.mozilla.org/en-US/docs/Web/HTML)"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          MDN's HTML guide
+        </a>.
+      </p>
+    </section>
+
+    <section id="examples">
+      <h2>Common HTML elements</h2>
+
+      <div class="cards">
+        <article class="card">
+          <h3>Heading</h3>
+          <p>Headings label sections and range from h1 to h6.</p>
+        </article>
+
+        <article class="card">
+          <h3>Paragraph</h3>
+          <p>The p element contains a normal block of text.</p>
+        </article>
+
+        <article class="card">
+          <h3>Link</h3>
+          <p>The a element connects a page to another location.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="interactive">
+      <h2>JavaScript interaction</h2>
+
+      <p>Click the button to change the paragraph below.</p>
+
+      <button id="helloButton" type="button">
+        Click me
+      </button>
+
+      <p id="message" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Built as a beginner HTML example.</p>
+  </footer>
+
+  <!-- JavaScript controls what happens when the button is clicked. -->
+  <script>
+    const button = document.querySelector("#helloButton");
+    const message = document.querySelector("#message");
+
+    button.addEventListener("click", function () {
+      message.textContent = "Hello! JavaScript changed this text.";
+    });
+  </script>
+</body>
+</html>
