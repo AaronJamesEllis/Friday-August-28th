@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ORBIT — Circular Euclidean Drum Machine</title>
+  <style>
+    :root {
+      --bg: #0e0c16;
+      --panel: #171422;
+      --panel-2: #201b31;
+      --line: rgba(255,255,255,.09);
+      --text: #f2eefc;
+      --muted: #9a92b5;
+      --gold: #f5c451;
+      --coral: #ff6b6b;
+      --violet: #a78bfa;
+      --mint: #5eead4;
+      --sky: #60a5fa;
+      --rose: #f472b6;
+      --shadow: 0 16px 40px rgba(0,0,0,.35);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background:
+        radial-gradient(ellipse at 20% 0%, #241d3d 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 100%, #1c1030 0%, transparent 55%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 26px 22px 46px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 4vw, 2.6rem);
+      letter-spacing: 2px;
+      font-weight: 900;
+    }
+
+    h1 span { color: var(--gold); }
+
+    .tagline { color: var(--muted); margin-top: 6px; font-size: .95rem; }
+
+    kbd {
+      background: rgba(255,255,255,.1);
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-size: .85rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .card {
+      background: rgba(23,20,34,.95);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    /* ----- circular display ----- */
+    .orbit-card { text-align: center; }
+
+    #orbitCanvas {
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 1;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .transport {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    button, select {
+      font: inherit;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 10px 16px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .1s ease, filter .15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); filter: brightness(1.15); }
+    button:active { transform: translateY(1px); }
+    button.primary { background: var(--gold); color: #191203; border-color: transparent; }
+    button.danger { background: var(--coral); color: #2b0707; border-color: transparent; }
+    button.playing { outline: 2px solid var(--gold); }
+
+    .global-sliders {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 18px;
+      margin-top: 16px;
+      text-align: left;
+    }
+
+    .gs {
+      display: grid;
+      gap: 4px;
+      font-size: .8rem;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .gs input { width: 100%; accent-color: var(--gold); }
+
+    /* ----- track editors ----- */
+    .tracks { display: grid; gap: 12px; }
+
+    .track {
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--tc, var(--gold));
+      border-radius: 14px;
+      background: rgba(255,255,255,.03);
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 130px 1fr 1fr 1fr auto;
+      gap: 10px 16px;
+      align-items: center;
+    }
+
+    .track .tname { font-weight: 800; }
+    .track .tsub { color: var(--muted); font-size: .78rem; margin-top: 2px; }
+
+    .param {
+      display: grid;
+      gap: 3px;
+      font-size: .74rem;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .param input { width: 100%; accent-color: var(--tc, var(--gold)); }
+    .param b { color: var(--text); }
+
+    .tbtns { display: flex; gap: 6px; }
+
+    .mini {
+      width: 30px; height: 30px;
+      padding: 0;
+      border-radius: 7px;
+      font-size: .75rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+    }
+
+    .mini.on-mute { background: var(--coral); color: #2b0707; }
+
+    .hintbox {
+      margin-top: 16px;
+      background: rgba(255,255,255,.04);
+      border-radius: 14px;
+      padding: 14px 16px;
+      color: var(--muted);
+      font-size: .92rem;
+      line-height: 1.55;
+    }
+
+    .hintbox strong { color: var(--text); }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .track { grid-template-columns: 1fr 1fr; }
+      .track .thead { grid-column: 1 / -1; }
+      .tbtns { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>ORBIT<span>.</span></h1>
+        <div class="tagline">A circular Euclidean drum machine — rhythms as rings, beats as planets.</div>
+      </div>
+      <div class="tagline"><kbd>Space</kbd> play / stop &nbsp;·&nbsp; <kbd>R</kbd> randomize</div>
+    </header>
+
+    <div class="layout">
+      <section class="card orbit-card">
+        <canvas id="orbitCanvas" width="840" height="840"></canvas>
+        <div class="transport">
+          <button id="playBtn" class="primary">▶ Play</button>
+          <button id="randBtn">🎲 Randomize</button>
+          <button id="resetBtn" class="danger">Reset</button>
+        </div>
+        <div class="global-sliders">
+          <label class="gs">Tempo <b id="bpmVal">112 BPM</b>
+            <input id="bpm" type="range" min="60" max="180" value="112">
+          </label>
+          <label class="gs">Master volume
+            <input id="vol" type="range" min="0" max="100" value="80">
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 style="margin:0 0 12px">Rings</h2>
+        <div class="tracks" id="tracks"></div>
+        <div class="hintbox">
+          <strong>How it works:</strong> each ring spreads its <strong>hits</strong> as evenly as
+          possible around <strong>16 steps</strong> — the Euclidean algorithm behind rhythms from
+          Cuban tresillo (3/8) to Turkish aksak. <strong>Rotate</strong> shifts where the pattern
+          starts. Layer rings with different hit counts and you get instant polyrhythms.
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const STEPS = 16;
+
+    const TRACKS = [
+      { id: 'kick',  name: 'Kick',     color: '#f5c451', hits: 4,  rot: 0 },
+      { id: 'snare', name: 'Snare',    color: '#ff6b6b', hits: 2,  rot: 4 },
+      { id: 'hat',   name: 'Hi-Hat',   color: '#5eead4', hits: 8,  rot: 0 },
+      { id: 'rim',   name: 'Rimshot',  color: '#a78bfa', hits: 5,  rot: 2 },
+      { id: 'shak',  name: 'Shaker',   color: '#60a5fa', hits: 7,  rot: 1 },
+      { id: 'perc',  name: 'Perc Blip',color: '#f472b6', hits: 3,  rot: 3 }
+    ];
+
+    const state = {};
+    TRACKS.forEach(t => state[t.id] = { hits: t.hits, rot: t.rot, mute: false, pattern: [] });
+
+    // Bjorklund / Euclidean pattern
+    function euclid(hits, steps) {
+      if (hits <= 0) return Array(steps).fill(0);
+      if (hits >= steps) return Array(steps).fill(1);
+      const pattern = [];
+      let bucket = 0;
+      for (let i = 0; i < steps; i++) {
+        bucket += hits;
+        if (bucket >= steps) { bucket -= steps; pattern.push(1); }
+        else pattern.push(0);
+      }
+      return pattern;
+    }
+
+    function rotate(arr, n) {
+      const len = arr.length;
+      const shift = ((n % len) + len) % len;
+      return arr.slice(len - shift).concat(arr.slice(0, len - shift));
+    }
+
+    function rebuild(id) {
+      const s = state[id];
+      s.pattern = rotate(euclid(s.hits, STEPS), s.rot);
+    }
+    TRACKS.forEach(t => rebuild(t.id));
+
+    /* ---------- audio ---------- */
+    let ctx = null, master = null;
+    function initAudio() {
+      if (ctx) return;
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      master = ctx.createGain();
+      master.gain.value = 0.8;
+      master.connect(ctx.destination);
+    }
+
+    function noiseBuffer(dur) {
+      const n = ctx.sampleRate * dur;
+      const b = ctx.createBuffer(1, n, ctx.sampleRate);
+      const d = b.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      return b;
+    }
+
+    const voices = {
+      kick(t) {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(160, t);
+        o.frequency.exponentialRampToValueAtTime(40, t + 0.13);
+        g.gain.setValueAtTime(1, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        o.connect(g).connect(master); o.start(t); o.stop(t + 0.16);
+      },
+      snare(t) {
+        const src = ctx.createBufferSource(); src.buffer = noiseBuffer(0.16);
+        const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 1100;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.6, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+        src.connect(f).connect(g).connect(master); src.start(t); src.stop(t + 0.17);
+        const o = ctx.createOscillator(), og = ctx.createGain();
+        o.type = 'triangle'; o.frequency.setValueAtTime(190, t);
+        og.gain.setValueAtTime(0.5, t);
+        og.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+        o.connect(og).connect(master); o.start(t); o.stop(t + 0.1);
+      },
+      hat(t) {
+        const src = ctx.createBufferSource(); src.buffer = noiseBuffer(0.05);
+        const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 6500;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.25, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
+        src.connect(f).connect(g).connect(master); src.start(t); src.stop(t + 0.05);
+      },
+      rim(t) {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'square'; o.frequency.setValueAtTime(880, t);
+        g.gain.setValueAtTime(0.25, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+        o.connect(g).connect(master); o.start(t); o.stop(t + 0.05);
+      },
+      shak(t) {
+        const src = ctx.createBufferSource(); src.buffer = noiseBuffer(0.09);
+        const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 4200; f.Q.value = 1.5;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.001, t);
+        g.gain.exponentialRampToValueAtTime(0.28, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+        src.connect(f).connect(g).connect(master); src.start(t); src.stop(t + 0.1);
+      },
+      perc(t) {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(620, t);
+        o.frequency.exponentialRampToValueAtTime(310, t + 0.09);
+        g.gain.setValueAtTime(0.35, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+        o.connect(g).connect(master); o.start(t); o.stop(t + 0.12);
+      }
+    };
+
+    /* ---------- sequencer ---------- */
+    let playing = false, step = 0, nextTime = 0, timer = null, bpm = 112, uiStep = -1;
+
+    function scheduler() {
+      while (nextTime < ctx.currentTime + 0.12) {
+        const s = step % STEPS, t = nextTime;
+        TRACKS.forEach(tr => {
+          const st = state[tr.id];
+          if (!st.mute && st.pattern[s]) voices[tr.id](t);
+        });
+        const delay = Math.max(0, (t - ctx.currentTime) * 1000);
+        setTimeout(() => { uiStep = s; }, delay);
+        nextTime += 60 / bpm / 4;
+        step++;
+      }
+      timer = setTimeout(scheduler, 25);
+    }
+
+    function play() {
+      initAudio();
+      ctx.resume();
+      if (playing) return stop();
+      playing = true; step = 0; nextTime = ctx.currentTime + 0.06;
+      scheduler();
+      playBtn.textContent = '⏸ Stop';
+      playBtn.classList.add('playing');
+    }
+
+    function stop() {
+      playing = false; uiStep = -1;
+      clearTimeout(timer);
+      playBtn.textContent = '▶ Play';
+      playBtn.classList.remove('playing');
+    }
+
+    /* ---------- canvas rings ---------- */
+    const canvas = document.getElementById('orbitCanvas');
+    const g2d = canvas.getContext('2d');
+
+    function draw() {
+      requestAnimationFrame(draw);
+      const W = canvas.width, H = canvas.height;
+      const cx = W / 2, cy = H / 2;
+      g2d.clearRect(0, 0, W, H);
+
+      // playhead spoke
+      if (uiStep >= 0) {
+        const a = (uiStep / STEPS) * Math.PI * 2 - Math.PI / 2;
+        g2d.strokeStyle = 'rgba(245,196,81,.35)';
+        g2d.lineWidth = 5;
+        g2d.beginPath();
+        g2d.moveTo(cx, cy);
+        g2d.lineTo(cx + Math.cos(a) * (W / 2 - 20), cy + Math.sin(a) * (H / 2 - 20));
+        g2d.stroke();
+      }
+
+      TRACKS.forEach((tr, ri) => {
+        const st = state[tr.id];
+        const radius = 90 + ri * 52;
+
+        g2d.strokeStyle = 'rgba(255,255,255,.07)';
+        g2d.lineWidth = 2;
+        g2d.beginPath();
+        g2d.arc(cx, cy, radius, 0, Math.PI * 2);
+        g2d.stroke();
+
+        for (let i = 0; i < STEPS; i++) {
+          const a = (i / STEPS) * Math.PI * 2 - Math.PI / 2;
+          const x = cx + Math.cos(a) * radius;
+          const y = cy + Math.sin(a) * radius;
+          const on = st.pattern[i] === 1;
+          const isNow = i === uiStep;
+
+          g2d.beginPath();
+          g2d.arc(x, y, on ? (isNow ? 15 : 11) : 3.5, 0, Math.PI * 2);
+          if (on) {
+            g2d.fillStyle = st.mute ? 'rgba(255,255,255,.15)' : tr.color;
+            if (isNow && !st.mute) {
+              g2d.shadowColor = tr.color;
+              g2d.shadowBlur = 22;
+            }
+          } else {
+            g2d.fillStyle = 'rgba(255,255,255,.18)';
+          }
+          g2d.fill();
+          g2d.shadowBlur = 0;
+        }
+      });
+
+      // center label
+      g2d.fillStyle = 'rgba(242,238,252,.9)';
+      g2d.font = '700 30px Segoe UI, sans-serif';
+      g2d.textAlign = 'center';
+      g2d.textBaseline = 'middle';
+      g2d.fillText(bpm + '', cx, cy - 12);
+      g2d.fillStyle = 'rgba(154,146,181,.9)';
+      g2d.font = '600 15px Segoe UI, sans-serif';
+      g2d.fillText('BPM', cx, cy + 16);
+    }
+    draw();
+
+    /* ---------- track UI ---------- */
+    const tracksEl = document.getElementById('tracks');
+
+    function renderTracks() {
+      tracksEl.innerHTML = '';
+      TRACKS.forEach(tr => {
+        const st = state[tr.id];
+        const row = document.createElement('div');
+        row.className = 'track';
+        row.style.setProperty('--tc', tr.color);
+        row.innerHTML = `
+          <div class="thead">
+            <div class="tname" style="color:${tr.color}">${tr.name}</div>
+            <div class="tsub">E(${st.hits}, ${STEPS}) rot ${st.rot}</div>
+          </div>
+          <label class="param">Hits <b>${st.hits}</b>
+            <input type="range" min="0" max="16" value="${st.hits}" data-id="${tr.id}" data-p="hits">
+          </label>
+          <label class="param">Rotate <b>${st.rot}</b>
+            <input type="range" min="0" max="15" value="${st.rot}" data-id="${tr.id}" data-p="rot">
+          </label>
+          <label class="param">Preview
+            <button class="mini" data-prev="${tr.id}" style="width:100%;height:30px">♪</button>
+          </label>
+          <div class="tbtns">
+            <button class="mini ${st.mute ? 'on-mute' : ''}" data-mute="${tr.id}" title="Mute">M</button>
+          </div>
+        `;
+        tracksEl.appendChild(row);
+      });
+
+      tracksEl.querySelectorAll('input[type=range]').forEach(inp => {
+        inp.addEventListener('input', e => {
+          const { id, p } = e.target.dataset;
+          state[id][p] = parseInt(e.target.value, 10);
+          rebuild(id);
+          renderTracks();
+        });
+      });
+
+      tracksEl.querySelectorAll('[data-mute]').forEach(b => {
+        b.addEventListener('click', () => {
+          const id = b.dataset.mute;
+          state[id].mute = !state[id].mute;
+          renderTracks();
+        });
+      });
+
+      tracksEl.querySelectorAll('[data-prev]').forEach(b => {
+        b.addEventListener('click', () => {
+          initAudio(); ctx.resume();
+          voices[b.dataset.prev](ctx.currentTime);
+        });
+      });
+    }
+    renderTracks();
+
+    /* ---------- transport controls ---------- */
+    const playBtn = document.getElementById('playBtn');
+    playBtn.addEventListener('click', play);
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      TRACKS.forEach(t => {
+        state[t.id].hits = t.hits;
+        state[t.id].rot = t.rot;
+        state[t.id].mute = false;
+        rebuild(t.id);
+      });
+      renderTracks();
+    });
+
+    function randomize() {
+      TRACKS.forEach((t, i) => {
+        const s = state[t.id];
+        s.hits = i === 0 ? 2 + Math.floor(Math.random() * 4)      // kick 2-5
+               : i === 2 ? 4 + Math.floor(Math.random() * 9)      // hat 4-12
+               : Math.floor(Math.random() * 8);                   // others 0-7
+        s.rot = Math.floor(Math.random() * STEPS);
+        rebuild(t.id);
+      });
+      renderTracks();
+    }
+    document.getElementById('randBtn').addEventListener('click', randomize);
+
+    document.getElementById('bpm').addEventListener('input', e => {
+      bpm = parseInt(e.target.value, 10);
+      document.getElementById('bpmVal').textContent = bpm + ' BPM';
+    });
+
+    document.getElementById('vol').addEventListener('input', e => {
+      if (master) master.gain.value = parseInt(e.target.value, 10) / 100;
+    });
+
+    window.addEventListener('keydown', e => {
+      if (e.code === 'Space' && e.target.tagName !== 'INPUT') { e.preventDefault(); play(); }
+      if (e.key.toLowerCase() === 'r' && e.target.tagName !== 'INPUT') randomize();
+    });
+  </script>
+</body>
+</html>
