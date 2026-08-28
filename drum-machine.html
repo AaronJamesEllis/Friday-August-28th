@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teach Me Drums</title>
+  <style>
+    :root {
+      --bg: #0f1220;
+      --panel: #171b2e;
+      --panel-2: #1f2540;
+      --accent: #7c9cff;
+      --accent-2: #4ee1a0;
+      --text: #eef2ff;
+      --muted: #aeb8d9;
+      --danger: #ff7a90;
+      --grid: #2d355e;
+      --active: #ffd166;
+      --shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: linear-gradient(180deg, #0b0e19, #12172a 40%, #0f1220);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: rgba(23,27,46,.94);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.3rem);
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.5;
+    }
+
+    .pillrow, .controls, .lesson-actions, .transport {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button, select, input[type="range"] {
+      border: 0;
+      border-radius: 12px;
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      color: var(--text);
+      background: var(--panel-2);
+      padding: 10px 14px;
+      transition: transform .08s ease, opacity .2s ease, background .2s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button.primary { background: var(--accent); color: #081120; font-weight: 700; }
+    button.good { background: var(--accent-2); color: #081120; font-weight: 700; }
+    button.warn { background: var(--danger); }
+    button.ghost { background: transparent; border: 1px solid rgba(255,255,255,.12); }
+    button.activeCtl { outline: 2px solid var(--active); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat {
+      background: rgba(255,255,255,.04);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .stat .label { color: var(--muted); font-size: .9rem; }
+    .stat .value { font-size: 1.6rem; font-weight: 800; margin-top: 4px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .lesson-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .lesson-btn {
+      text-align: left;
+      width: 100%;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .lesson-btn strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .lesson-btn small { color: var(--muted); }
+
+    .grid-wrap {
+      overflow-x: auto;
+      margin-top: 18px;
+    }
+
+    .machine-grid {
+      display: grid;
+      grid-template-columns: 100px repeat(16, minmax(38px, 1fr));
+      gap: 6px;
+      min-width: 860px;
+      align-items: center;
+    }
+
+    .corner, .step-head, .row-label, .step {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+    }
+
+    .corner, .step-head {
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .step-head.bar { border-left: 3px solid rgba(255,255,255,.15); }
+    .row-label {
+      justify-content: flex-start;
+      padding: 0 12px;
+      background: rgba(255,255,255,.04);
+      font-weight: 700;
+    }
+
+    .step {
+      background: #20284a;
+      border: 1px solid transparent;
+      cursor: pointer;
+      user-select: none;
+      font-weight: 700;
+      color: transparent;
+    }
+
+    .step.on {
+      background: linear-gradient(180deg, #8aa1ff, #6988ff);
+      color: #081120;
+    }
+
+    .step.playing {
+      border-color: var(--active);
+      box-shadow: inset 0 0 0 2px rgba(255,209,102,.35);
+    }
+
+    .step.suggested:not(.on) {
+      outline: 2px dashed rgba(78,225,160,.6);
+      outline-offset: -4px;
+    }
+
+    .step.wrong {
+      animation: shake .18s linear 2;
+      background: linear-gradient(180deg, #ff9aae, #ff7a90);
+      color: #081120;
+    }
+
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-1px); }
+      50% { transform: translateX(1px); }
+      75% { transform: translateX(-1px); }
+      100% { transform: translateX(0); }
+    }
+
+    .hint, .tiny { color: var(--muted); }
+
+    .lesson-panel h2 {
+      margin-bottom: 8px;
+    }
+
+    .lesson-panel p {
+      line-height: 1.5;
+    }
+
+    .explain {
+      background: rgba(255,255,255,.04);
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 14px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: .92rem;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .meter {
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,.08);
+      margin-top: 10px;
+    }
+
+    .meter > div {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-2), var(--accent));
+      transition: width .2s ease;
+    }
+
+    .control-block {
+      margin-top: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 80px 1fr 50px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      background: transparent;
+    }
+
+    kbd {
+      background: rgba(255,255,255,.08);
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-size: .85rem;
+    }
+
+    @media (max-width: 900px) {
+      .hero, .layout { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="card">
+        <h1>Learn Drum Patterns by Building Them</h1>
+        <p class="sub">This single-page drum machine teaches groove basics one layer at a time: kick, snare, and hi-hat. Listen, copy, get instant feedback, and then experiment with your own beat.</p>
+        <div class="transport">
+          <button id="audioBtn" class="primary">Enable Sound</button>
+          <button id="playBtn">Play</button>
+          <button id="stopBtn">Stop</button>
+          <button id="clearBtn" class="ghost">Clear Grid</button>
+        </div>
+        <div class="control-block">
+          <div class="slider-row">
+            <label for="tempo">Tempo</label>
+            <input id="tempo" type="range" min="60" max="160" value="96" />
+            <span id="tempoVal">96</span>
+          </div>
+          <div class="slider-row">
+            <label for="swing">Swing</label>
+            <input id="swing" type="range" min="0" max="35" value="0" />
+            <span id="swingVal">0%</span>
+          </div>
+          <div class="tiny">Tips: press <kbd>Space</kbd> to play/stop, and click steps to toggle notes.</div>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <div class="label">Current Lesson</div>
+            <div class="value" id="lessonName">Booting up</div>
+          </div>
+          <div class="stat">
+            <div class="label">Score</div>
+            <div class="value" id="score">0%</div>
+          </div>
+          <div class="stat">
+            <div class="label">Streak</div>
+            <div class="value" id="streak">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>How the grid works</h2>
+        <p class="sub">Each row is a drum. Each column is a 16th-note step in a one-bar loop. Count it as <strong>1 e & a 2 e & a 3 e & a 4 e & a</strong>.</p>
+        <div class="explain">
+          <strong>Quick groove map</strong>
+          <p class="tiny"><strong>Kick</strong> gives weight, usually on 1 and sometimes 3.<br>
+          <strong>Snare</strong> often lands on beats 2 and 4.<br>
+          <strong>Hi-hat</strong> keeps time with steady repeated notes.</p>
+          <div class="legend">
+            <span><span class="dot" style="background:#6988ff"></span>Your active step</span>
+            <span><span class="dot" style="background:#ffd166"></span>Playhead</span>
+            <span><span class="dot" style="background:#4ee1a0"></span>Suggested answer</span>
+          </div>
+        </div>
+        <div class="meter"><div id="progressBar"></div></div>
+        <p class="tiny" id="feedback">Pick a lesson and start building.</p>
+      </div>
+    </section>
+
+    <section class="layout">
+      <aside class="card">
+        <h2>Lessons</h2>
+        <div class="lesson-list" id="lessonList"></div>
+      </aside>
+
+      <main class="card lesson-panel">
+        <h2 id="panelTitle">Drum Machine</h2>
+        <p id="panelText">Choose a lesson to load a pattern and explanation.</p>
+        <div class="lesson-actions">
+          <button id="listenBtn" class="good">Listen to Lesson</button>
+          <button id="showHintBtn">Show Hints</button>
+          <button id="checkBtn" class="primary">Check My Pattern</button>
+          <button id="loadAnswerBtn" class="ghost">Reveal Lesson Pattern</button>
+        </div>
+
+        <div class="grid-wrap">
+          <div class="machine-grid" id="grid"></div>
+        </div>
+      </main>
+    </section>
+  </div>
+
+  <script>
+    const rows = [
+      { key: 'kick', label: 'Kick', color: '#8aa1ff' },
+      { key: 'snare', label: 'Snare', color: '#ff8fab' },
+      { key: 'hihat', label: 'Hi-Hat', color: '#63e6be' }
+    ];
+
+    const lessons = [
+      {
+        name: '1. Four On The Floor',
+        text: 'Start with the easiest dance groove. Put the kick on every beat: 1, 2, 3, 4. Add snare on 2 and 4. Fill the hi-hat with steady 8th notes. This teaches pulse and backbeat.',
+        goal: {
+          kick:  [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+          snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+          hihat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0]
+        },
+        focus: 'Hear how the snare on beats 2 and 4 makes the groove feel stable.'
+      },
+      {
+        name: '2. Basic Rock Beat',
+        text: 'This is the classic beginner drum pattern. Kick on 1 and 3, snare on 2 and 4, hi-hat on all 8th notes. Once this feels natural, you will recognize it in thousands of songs.',
+        goal: {
+          kick:  [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+          snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+          hihat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0]
+        },
+        focus: 'This beat teaches the relationship between downbeats and the backbeat.'
+      },
+      {
+        name: '3. Pop Beat With Extra Kick',
+        text: 'Now add motion. Keep snare on 2 and 4, steady hi-hats, and place an extra kick before beat 3. This adds forward drive without making the beat complicated.',
+        goal: {
+          kick:  [1,0,0,0, 0,0,1,0, 1,0,0,0, 0,0,0,0],
+          snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+          hihat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0]
+        },
+        focus: 'The extra kick on the "&" before 3 creates momentum.'
+      },
+      {
+        name: '4. Offbeat Hat Groove',
+        text: 'Here the hi-hat plays offbeats: every "&" instead of every beat. The kick and snare stay simple. This helps you hear how moving one layer changes the whole feel.',
+        goal: {
+          kick:  [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
+          snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+          hihat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0]
+        },
+        focus: 'Offbeat hats sound lighter and more syncopated than straight hats.'
+      },
+      {
+        name: '5. Syncopated Starter',
+        text: 'This pattern introduces simple syncopation. The kick skips some obvious spots and lands between beats. Copy it, loop it, and feel where the tension comes from.',
+        goal: {
+          kick:  [1,0,0,1, 0,0,0,0, 1,0,1,0, 0,0,0,0],
+          snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
+          hihat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0]
+        },
+        focus: 'Notice how the kick on the "a" of 1 and the "&" of 3 creates surprise.'
+      }
+    ];
+
+    const state = {
+      pattern: makeBlankPattern(),
+      lessonIndex: 0,
+      showHints: false,
+      isPlaying: false,
+      currentStep: -1,
+      tempo: 96,
+      swing: 0,
+      score: 0,
+      streak: 0,
+      audioReady: false,
+      schedulerId: null,
+      nextNoteTime: 0,
+      lookaheadId: null,
+      stepDuration: 0,
+      listenMode: false
+    };
+
+    let audioCtx;
+    let masterGain;
+
+    const el = {
+      grid: document.getElementById('grid'),
+      lessonList: document.getElementById('lessonList'),
+      panelTitle: document.getElementById('panelTitle'),
+      panelText: document.getElementById('panelText'),
+      lessonName: document.getElementById('lessonName'),
+      score: document.getElementById('score'),
+      streak: document.getElementById('streak'),
+      feedback: document.getElementById('feedback'),
+      progressBar: document.getElementById('progressBar'),
+      audioBtn: document.getElementById('audioBtn'),
+      playBtn: document.getElementById('playBtn'),
+      stopBtn: document.getElementById('stopBtn'),
+      clearBtn: document.getElementById('clearBtn'),
+      listenBtn: document.getElementById('listenBtn'),
+      showHintBtn: document.getElementById('showHintBtn'),
+      checkBtn: document.getElementById('checkBtn'),
+      loadAnswerBtn: document.getElementById('loadAnswerBtn'),
+      tempo: document.getElementById('tempo'),
+      tempoVal: document.getElementById('tempoVal'),
+      swing: document.getElementById('swing'),
+      swingVal: document.getElementById('swingVal')
+    };
+
+    function makeBlankPattern() {
+      return {
+        kick: Array(16).fill(0),
+        snare: Array(16).fill(0),
+        hihat: Array(16).fill(0)
+      };
+    }
+
+    function currentLesson() {
+      return lessons[state.lessonIndex];
+    }
+
+    function renderLessons() {
+      el.lessonList.innerHTML = '';
+      lessons.forEach((lesson, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'lesson-btn' + (index === state.lessonIndex ? ' activeCtl' : '');
+        btn.innerHTML = `<strong>${lesson.name}</strong><small>${lesson.focus}</small>`;
+        btn.addEventListener('click', () => {
+          state.lessonIndex = index;
+          state.pattern = makeBlankPattern();
+          state.showHints = false;
+          stop();
+          syncUI();
+        });
+        el.lessonList.appendChild(btn);
+      });
+    }
+
+    function renderGrid() {
+      el.grid.innerHTML = '';
+      const corner = document.createElement('div');
+      corner.className = 'corner';
+      corner.textContent = 'Steps';
+      el.grid.appendChild(corner);
+
+      for (let i = 0; i < 16; i++) {
+        const head = document.createElement('div');
+        head.className = 'step-head' + (i % 4 === 0 ? ' bar' : '');
+        head.textContent = i + 1;
+        el.grid.appendChild(head);
+      }
+
+      rows.forEach(row => {
+        const label = document.createElement('div');
+        label.className = 'row-label';
+        label.textContent = row.label;
+        el.grid.appendChild(label);
+
+        for (let i = 0; i < 16; i++) {
+          const cell = document.createElement('button');
+          const goal = currentLesson().goal[row.key][i];
+          const isOn = state.pattern[row.key][i] === 1;
+          cell.className = 'step' + (isOn ? ' on' : '') + (state.currentStep === i ? ' playing' : '') + (state.showHints && goal ? ' suggested' : '');
+          if (isOn) cell.textContent = '●';
+          cell.dataset.row = row.key;
+          cell.dataset.step = i;
+          cell.addEventListener('click', () => toggleStep(row.key, i, cell));
+          el.grid.appendChild(cell);
+        }
+      });
+    }
+
+    function toggleStep(rowKey, step, node) {
+      state.pattern[rowKey][step] = state.pattern[rowKey][step] ? 0 : 1;
+      if (state.audioReady && state.pattern[rowKey][step]) {
+        playSound(rowKey, audioCtx.currentTime);
+      }
+      node.classList.remove('wrong');
+      syncUI(false);
+    }
+
+    function syncUI(rerenderLessonsToo = true) {
+      const lesson = currentLesson();
+      el.panelTitle.textContent = lesson.name;
+      el.panelText.textContent = lesson.text;
+      el.lessonName.textContent = lesson.name.split('. ')[1] || lesson.name;
+      el.score.textContent = `${state.score}%`;
+      el.streak.textContent = state.streak;
+      el.feedback.textContent = state.showHints
+        ? 'Hints are visible. Try placing notes where the green outlines appear.'
+        : lesson.focus;
+      el.progressBar.style.width = `${state.score}%`;
+      el.showHintBtn.textContent = state.showHints ? 'Hide Hints' : 'Show Hints';
+      el.playBtn.textContent = state.isPlaying ? 'Pause' : 'Play';
+      if (rerenderLessonsToo) renderLessons();
+      renderGrid();
+    }
+
+    function comparePatterns() {
+      const goal = currentLesson().goal;
+      let total = 0;
+      let correct = 0;
+      let wrongCells = [];
+
+      rows.forEach(row => {
+        for (let i = 0; i < 16; i++) {
+          total++;
+          if (state.pattern[row.key][i] === goal[row.key][i]) {
+            correct++;
+          } else {
+            wrongCells.push({ row: row.key, step: i });
+          }
+        }
+      });
+
+      const score = Math.round((correct / total) * 100);
+      state.score = score;
+      if (score === 100) {
+        state.streak += 1;
+        el.feedback.textContent = 'Perfect. You matched the lesson pattern exactly. Now loop it and listen to how it feels.';
+      } else {
+        state.streak = 0;
+        el.feedback.textContent = `You matched ${correct} of ${total} steps. Focus on kick and snare first, then fill the hi-hat.`;
+        markWrongCells(wrongCells);
+      }
+      syncUI(false);
+    }
+
+    function markWrongCells(cells) {
+      const buttons = [...document.querySelectorAll('.step')];
+      cells.forEach(({ row, step }) => {
+        const btn = buttons.find(b => b.dataset.row === row && Number(b.dataset.step) === step);
+        if (btn) btn.classList.add('wrong');
+      });
+    }
+
+    function loadAnswer() {
+      state.pattern = JSON.parse(JSON.stringify(currentLesson().goal));
+      state.score = 100;
+      el.feedback.textContent = 'Lesson pattern loaded. Press play and study how the layers interact.';
+      syncUI(false);
+    }
+
+    async function initAudio() {
+      if (state.audioReady) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      await audioCtx.resume();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0.8;
+      masterGain.connect(audioCtx.destination);
+      state.audioReady = true;
+      el.audioBtn.textContent = 'Sound Ready';
+      el.feedback.textContent = 'Sound is enabled. Start with lesson 1 and listen to the pulse.';
+    }
+
+    function playSound(type, time) {
+      if (!audioCtx) return;
+      if (type === 'kick') playKick(time);
+      if (type === 'snare') playSnare(time);
+      if (type === 'hihat') playHat(time);
+    }
+
+    function playKick(time) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(140, time);
+      osc.frequency.exponentialRampToValueAtTime(48, time + 0.12);
+      gain.gain.setValueAtTime(0.9, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.14);
+      osc.connect(gain).connect(masterGain);
+      osc.start(time);
+      osc.stop(time + 0.15);
+    }
+
+    function playSnare(time) {
+      const bufferSize = audioCtx.sampleRate * 0.18;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 900;
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.55, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+      noise.connect(filter).connect(gain).connect(masterGain);
+      noise.start(time);
+      noise.stop(time + 0.16);
+    }
+
+    function playHat(time) {
+      const bufferSize = audioCtx.sampleRate * 0.06;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 5000;
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.23, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+      noise.connect(filter).connect(gain).connect(masterGain);
+      noise.start(time);
+      noise.stop(time + 0.05);
+    }
+
+    function stepSeconds(stepIndex) {
+      const sixteenth = 60 / state.tempo / 4;
+      const swingAmt = (state.swing / 100) * sixteenth * 0.5;
+      return sixteenth + (stepIndex % 2 === 1 ? swingAmt : 0);
+    }
+
+    function scheduleStep(step, time) {
+      rows.forEach(row => {
+        const sourcePattern = state.listenMode ? currentLesson().goal : state.pattern;
+        if (sourcePattern[row.key][step]) playSound(row.key, time);
+      });
+
+      const delay = Math.max(0, (time - audioCtx.currentTime) * 1000);
+      window.setTimeout(() => {
+        state.currentStep = step;
+        renderGrid();
+      }, delay);
+    }
+
+    function scheduler() {
+      while (state.nextNoteTime < audioCtx.currentTime + 0.12) {
+        scheduleStep(state.schedulerId % 16, state.nextNoteTime);
+        state.nextNoteTime += stepSeconds(state.schedulerId % 16);
+        state.schedulerId++;
+      }
+      state.lookaheadId = window.setTimeout(scheduler, 25);
+    }
+
+    async function play(listenMode = false) {
+      if (!state.audioReady) await initAudio();
+      if (state.isPlaying) {
+        stop();
+        return;
+      }
+      state.listenMode = listenMode;
+      state.isPlaying = true;
+      state.schedulerId = 0;
+      state.currentStep = -1;
+      state.nextNoteTime = audioCtx.currentTime + 0.05;
+      scheduler();
+      syncUI(false);
+    }
+
+    function stop() {
+      state.isPlaying = false;
+      state.listenMode = false;
+      state.currentStep = -1;
+      if (state.lookaheadId) window.clearTimeout(state.lookaheadId);
+      state.lookaheadId = null;
+      renderGrid();
+      syncUI(false);
+    }
+
+    el.audioBtn.addEventListener('click', initAudio);
+    el.playBtn.addEventListener('click', () => play(false));
+    el.stopBtn.addEventListener('click', stop);
+    el.listenBtn.addEventListener('click', () => play(true));
+    el.checkBtn.addEventListener('click', comparePatterns);
+    el.loadAnswerBtn.addEventListener('click', loadAnswer);
+    el.clearBtn.addEventListener('click', () => {
+      state.pattern = makeBlankPattern();
+      state.score = 0;
+      state.streak = 0;
+      el.feedback.textContent = 'Grid cleared. Rebuild the groove from scratch.';
+      syncUI(false);
+    });
+    el.showHintBtn.addEventListener('click', () => {
+      state.showHints = !state.showHints;
+      syncUI(false);
+    });
+    el.tempo.addEventListener('input', e => {
+      state.tempo = Number(e.target.value);
+      el.tempoVal.textContent = String(state.tempo);
+    });
+    el.swing.addEventListener('input', e => {
+      state.swing = Number(e.target.value);
+      el.swingVal.textContent = `${state.swing}%`;
+    });
+
+    window.addEventListener('keydown', e => {
+      if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+        e.preventDefault();
+        play(false);
+      }
+    });
+
+    syncUI();
+  </script>
+</body>
+</html>
