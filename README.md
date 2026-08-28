@@ -1,5 +1,3 @@
-###Sneneor Net Demo Page
+##Sensor Net Demo Page
+**Notes
 
-##Notes
-
-We want to
